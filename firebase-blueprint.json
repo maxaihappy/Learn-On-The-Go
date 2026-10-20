@@ -1,0 +1,176 @@
+{
+  "entities": {
+    "Folder": {
+      "title": "Folder",
+      "description": "Represents an organizing folder for audio learner study files",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]+$",
+          "maxLength": 128,
+          "description": "Unique identifier of the folder"
+        },
+        "ownerId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]+$",
+          "maxLength": 128,
+          "description": "UID of the user who owns this folder"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "description": "Display name of the folder"
+        },
+        "color": {
+          "type": "string",
+          "maxLength": 30,
+          "description": "Accent hex or color string for UI display"
+        },
+        "icon": {
+          "type": "string",
+          "maxLength": 50,
+          "description": "Icon identifier name"
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 500,
+          "description": "Optional brief description of folder contents"
+        },
+        "createdAt": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "ISO timestamp string when the folder was created"
+        }
+      },
+      "required": ["id", "ownerId", "name", "color", "icon", "createdAt"]
+    },
+    "UploadedFile": {
+      "title": "UploadedFile",
+      "description": "Represents an uploaded document or audio item converted to readable text/markdown",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]+$",
+          "maxLength": 128,
+          "description": "Unique identifier of the file"
+        },
+        "ownerId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]+$",
+          "maxLength": 128,
+          "description": "UID of the user who owns this file"
+        },
+        "folderId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]+$",
+          "maxLength": 128,
+          "description": "ID of parent folder if assigned"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200,
+          "description": "File name"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["markdown", "text", "pdf", "audio", "code", "other"],
+          "description": "Type of the file"
+        },
+        "size": {
+          "type": "number",
+          "description": "File size in bytes"
+        },
+        "content": {
+          "type": "string",
+          "maxLength": 1000000,
+          "description": "Converted clean text or Markdown content ready for TTS playback"
+        },
+        "estimatedDuration": {
+          "type": "number",
+          "description": "Estimated speech listening duration in seconds"
+        },
+        "createdAt": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "ISO timestamp string when the file was created"
+        }
+      },
+      "required": ["id", "ownerId", "name", "type", "size", "content", "createdAt"]
+    },
+    "PlaybackSettings": {
+      "title": "PlaybackSettings",
+      "description": "User preferences for audio reader voice, speed, and volume",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]+$",
+          "maxLength": 128,
+          "description": "Identifier (typically the owner UID)"
+        },
+        "ownerId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]+$",
+          "maxLength": 128,
+          "description": "UID of the user who owns these settings"
+        },
+        "speed": {
+          "type": "number",
+          "description": "Playback speech rate"
+        },
+        "voiceId": {
+          "type": "string",
+          "maxLength": 100,
+          "description": "Voice identifier"
+        },
+        "voiceEngine": {
+          "type": "string",
+          "maxLength": 50,
+          "description": "Voice engine"
+        },
+        "voiceName": {
+          "type": "string",
+          "maxLength": 100,
+          "description": "Voice display name"
+        },
+        "loopMode": {
+          "type": "string",
+          "enum": ["off", "all", "one"],
+          "description": "Repeat mode"
+        },
+        "autoPlayNext": {
+          "type": "boolean",
+          "description": "Whether to auto-advance to next queued item"
+        },
+        "volume": {
+          "type": "number",
+          "description": "Audio volume level 0.0 to 1.0"
+        },
+        "updatedAt": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "ISO timestamp string of last modification"
+        }
+      },
+      "required": ["id", "ownerId", "speed", "voiceId", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/folders/{folderId}": {
+      "schema": "Folder",
+      "description": "User folders for categorizing uploaded study materials"
+    },
+    "/files/{fileId}": {
+      "schema": "UploadedFile",
+      "description": "Stored documents and study files with extracted markdown for TTS"
+    },
+    "/settings/{settingId}": {
+      "schema": "PlaybackSettings",
+      "description": "Per-user playback settings and voice preferences"
+    }
+  }
+}

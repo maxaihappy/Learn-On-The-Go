@@ -1,0 +1,8 @@
+{
+  "name": "AudioLearner",
+  "description": "Upload files, organize into folders, listen with customizable voices and playback speed, manage playlists, and test your comprehension with AI-powered interactive quizzes.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

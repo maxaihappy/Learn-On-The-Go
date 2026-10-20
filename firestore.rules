@@ -1,0 +1,109 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Folders
+    function isValidFolder(data) {
+      return data.keys().hasAll(['id', 'ownerId', 'name', 'color', 'icon', 'createdAt']) &&
+             data.keys().hasOnly(['id', 'ownerId', 'name', 'color', 'icon', 'description', 'createdAt']) &&
+             isValidId(data.id) &&
+             data.ownerId == request.auth.uid &&
+             data.name is string && data.name.size() >= 1 && data.name.size() <= 100 &&
+             data.color is string && data.color.size() <= 30 &&
+             data.icon is string && data.icon.size() <= 50 &&
+             (!('description' in data) || (data.description is string && data.description.size() <= 500)) &&
+             data.createdAt is string && data.createdAt.size() <= 64;
+    }
+
+    match /folders/{folderId} {
+      allow get: if isSignedIn() && isValidId(folderId) && resource.data.ownerId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(folderId) && isValidFolder(incoming()) && incoming().id == folderId;
+      allow update: if isSignedIn() && isValidId(folderId) && isValidFolder(incoming()) &&
+                       existing().ownerId == request.auth.uid &&
+                       incoming().ownerId == existing().ownerId &&
+                       incoming().id == existing().id &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['name', 'color', 'icon', 'description']);
+      allow delete: if isSignedIn() && isValidId(folderId) && resource.data.ownerId == request.auth.uid;
+    }
+
+    // Files
+    function isValidUploadedFile(data) {
+      return data.keys().hasAll(['id', 'ownerId', 'name', 'type', 'size', 'content', 'createdAt']) &&
+             data.keys().hasOnly(['id', 'ownerId', 'folderId', 'name', 'type', 'size', 'content', 'tags', 'estimatedDuration', 'createdAt']) &&
+             isValidId(data.id) &&
+             data.ownerId == request.auth.uid &&
+             data.name is string && data.name.size() >= 1 && data.name.size() <= 200 &&
+             data.type is string && data.type in ['markdown', 'text', 'pdf', 'audio', 'code', 'other'] &&
+             data.size is number && data.size >= 0 &&
+             data.content is string && data.content.size() <= 1000000 &&
+             (!('folderId' in data) || data.folderId == '' || (data.folderId is string && isValidId(data.folderId))) &&
+             (!('tags' in data) || (data.tags is list && data.tags.size() <= 20)) &&
+             (!('estimatedDuration' in data) || (data.estimatedDuration is number && data.estimatedDuration >= 0)) &&
+             data.createdAt is string && data.createdAt.size() <= 64;
+    }
+
+    match /files/{fileId} {
+      allow get: if isSignedIn() && isValidId(fileId) && resource.data.ownerId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(fileId) && isValidUploadedFile(incoming()) && incoming().id == fileId;
+      allow update: if isSignedIn() && isValidId(fileId) && isValidUploadedFile(incoming()) &&
+                       existing().ownerId == request.auth.uid &&
+                       incoming().ownerId == existing().ownerId &&
+                       incoming().id == existing().id &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['name', 'folderId', 'tags', 'estimatedDuration', 'content', 'size']);
+      allow delete: if isSignedIn() && isValidId(fileId) && resource.data.ownerId == request.auth.uid;
+    }
+
+    // PlaybackSettings
+    function isValidSettings(data) {
+      return data.keys().hasAll(['id', 'ownerId', 'speed', 'voiceId', 'updatedAt']) &&
+             data.keys().hasOnly(['id', 'ownerId', 'speed', 'voiceId', 'voiceEngine', 'voiceName', 'loopMode', 'autoPlayNext', 'volume', 'updatedAt']) &&
+             isValidId(data.id) &&
+             data.ownerId == request.auth.uid &&
+             data.speed is number && data.speed >= 0.25 && data.speed <= 4.0 &&
+             data.voiceId is string && data.voiceId.size() <= 100 &&
+             (!('voiceEngine' in data) || (data.voiceEngine is string && data.voiceEngine.size() <= 50)) &&
+             (!('voiceName' in data) || (data.voiceName is string && data.voiceName.size() <= 100)) &&
+             (!('loopMode' in data) || (data.loopMode is string && data.loopMode in ['off', 'all', 'one'])) &&
+             (!('autoPlayNext' in data) || data.autoPlayNext is bool) &&
+             (!('volume' in data) || (data.volume is number && data.volume >= 0.0 && data.volume <= 1.0)) &&
+             data.updatedAt is string && data.updatedAt.size() <= 64;
+    }
+
+    match /settings/{settingId} {
+      allow get: if isSignedIn() && isValidId(settingId) && resource.data.ownerId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(settingId) && isValidSettings(incoming()) && incoming().id == settingId;
+      allow update: if isSignedIn() && isValidId(settingId) && isValidSettings(incoming()) &&
+                       existing().ownerId == request.auth.uid &&
+                       incoming().ownerId == existing().ownerId &&
+                       incoming().id == existing().id &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['speed', 'voiceId', 'voiceEngine', 'voiceName', 'loopMode', 'autoPlayNext', 'volume', 'updatedAt']);
+      allow delete: if isSignedIn() && isValidId(settingId) && resource.data.ownerId == request.auth.uid;
+    }
+  }
+}
